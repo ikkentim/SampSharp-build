@@ -14,7 +14,7 @@ Setup
   - **GITHUB_USERNAME**: The GitHub username to create new releases with. \*
   - **GITHUB_PASSWORD**: The GitHub password to create new releases with. \*
 
-_\* personally, I use an account I made specially for automated works for security reasons._
+_\* personally, I use an account I made specially for automated works for security reasons (Don't forget to give it the rights to the repo ;) )._
 
 Versioning
 ==========
