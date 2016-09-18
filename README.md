@@ -7,8 +7,9 @@ Setup
 2. Configure `build.cake` in your project root.
 3. Create your `.nuspec` files in the `nuspec` folder in your project root.
 4. Add this repository as a submodule using `git submodule add https://github.com/ikkentim/SampSharp-build.git cake` (make sure the `cake` directory does not exist yet! If it does, delete it, and commit the deletion first.)
-5. Setup AppVeyor for your repository.
-6. Add the following environment variables to the AppVeyor settings for your repository:
+5. Add `tools/` to your `.gitignore`.
+6. Setup AppVeyor for your repository.
+7. Add the following environment variables to the AppVeyor settings for your repository:
   - **LAGET_KEY**: The NuGet key to publish with
   - **GITHUB_USERNAME**: The GitHub username to create new releases with. \*
   - **GITHUB_PASSWORD**: The GitHub password to create new releases with. \*
