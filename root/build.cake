@@ -19,7 +19,7 @@ var build = new SaBuild(
     "<PROJECT_GH_USER_HERE>",               // github username
     "<PROJECT_GH_REPO_HERE>",               // github repository
     EnvironmentVariable("LAGET_KEY"),       // nuget key
-    "http://timpotze.nl/upload",            // nuget source
+    "http://nuget.timpotze.nl/upload",      // nuget source
     EnvironmentVariable("GITHUB_USERNAME"), // github release username
     EnvironmentVariable("GITHUB_PASSWORD"), // github release password
     new[] {                                 // nuget sources
