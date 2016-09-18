@@ -13,9 +13,11 @@ public class SaBuild
     protected string nuGetSource;
     protected string githubReleaseUsername;
     protected string githubReleasePassword;
+    protected string[] nuGetSources;
     
     public ICakeContext Context { get; private set; }
-    public SaBuild(ICakeContext context, string configuration, string debugBuildDir, string releaseBuildDir, string solution, string[] assemblyInfos, string[] nuGetPackages, string githubUsername, string githubRepo, string nuGetKey, string nuGetSource, string githubReleaseUsername, string githubReleasePassword)
+    
+    public SaBuild(ICakeContext context, string configuration, string debugBuildDir, string releaseBuildDir, string solution, string[] assemblyInfos, string[] nuGetPackages, string githubUsername, string githubRepo, string nuGetKey, string nuGetSource, string githubReleaseUsername, string githubReleasePassword, string[] nuGetSources)
     {
         this.configuration = configuration.ToLower() == "release"
             ? "Release"
@@ -32,6 +34,7 @@ public class SaBuild
         this.nuGetSource = nuGetSource;
         this.githubReleaseUsername = githubReleaseUsername;
         this.githubReleasePassword = githubReleasePassword;
+        this.nuGetSources = nuGetSources;
     }
     
     #region Properties
@@ -150,7 +153,7 @@ public class SaBuild
     
     public virtual void RestoreNuGetPackages()
     {
-        Context.NuGetRestore(solution);
+        Context.NuGetRestore(solution, new NuGetRestoreSettings { Source = nuGetSources });
     }
     
     private FilePath GetBackupPathForAssemblyInfo(FilePath path)
