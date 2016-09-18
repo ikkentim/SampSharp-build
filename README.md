@@ -5,7 +5,7 @@ Setup
 =====
 1. Stick the contents of the `root` directory into the root of your project.
 2. Configure `build.cake` in your project root.
-3. Add this repository as a submodule using `git submodule add git@github.com:ikkentim/SampSharp-build cake` (make sure the `cake` directory does not exist yet! If it does, delete it, and commit the deletion first.)
+3. Add this repository as a submodule using `git submodule add https://github.com/ikkentim/SampSharp-build.git cake` (make sure the `cake` directory does not exist yet! If it does, delete it, and commit the deletion first.)
 4. Setup AppVeyor for your repository.
 5. Add the following environment variables to the AppVeyor settings for your repository:
   - **LAGET_KEY**: The NuGet key to publish with
