@@ -156,47 +156,57 @@ public class SaBuild
         Context.NuGetRestore(solution, new NuGetRestoreSettings { Source = nuGetSources });
     }
     
-    private FilePath GetBackupPathForAssemblyInfo(FilePath path)
+    protected FilePath GetBackupPathForAssemblyInfo(FilePath path)
     {
         var str = path.FullPath;
-        return Context.File(str.Substring(0, str.Length - 3) + ".backup.cs");
+        return Context.File(str + ".pre-build.bak");
     }
 
+    protected virtual void UpdateAssemblyInfo(FilePath path, string find, string replace)
+    {
+        Context.Information("Updating assembly information for file {0}...", path);
+
+        FilePath backupPath = GetBackupPathForAssemblyInfo(path);
+        
+        Context.CopyFile(path, backupPath);
+
+        var abs = Context.MakeAbsolute(path).FullPath;
+        var content = System.IO.File.ReadAllText(abs);
+        var regex = new System.Text.RegularExpressions.Regex(find, System.Text.RegularExpressions.RegexOptions.Multiline);
+
+        content = regex.Replace(content, string.Format(replace, SemanticVersion));
+
+        System.IO.File.WriteAllText(abs, content);
+    }
+    
     public virtual void VersionAssemblyInfo()
     {
         foreach(var path in assemblyInfos)
         {
-            Context.Information("Updating assembly information for file {0}...", path);
-
-            FilePath backupPath = GetBackupPathForAssemblyInfo(path);
-        
-            Context.CopyFile(path, backupPath);
-
-            var abs = Context.MakeAbsolute(path).FullPath;
-            var content = System.IO.File.ReadAllText(abs);
-            var regex = new System.Text.RegularExpressions.Regex("\\[assembly: AssemblyVersion\\(\"(.*?)\"\\)\\]", System.Text.RegularExpressions.RegexOptions.Multiline);
-
-            content = regex.Replace(content, string.Format("[assembly: AssemblyVersion(\"{0}\")]", SemanticVersion));
-
-            System.IO.File.WriteAllText(abs, content);
+            UpdateAssemblyInfo(path, "\\[assembly: AssemblyVersion\\(\"(.*?)\"\\)\\]", "[assembly: AssemblyVersion(\"{0}\")]");
         }
+    }
+    
+    protected virtual void RestoreAssemblyInfo(FilePath path)
+    {
+        Context.Information("Restoring assembly information for file {0}...", path);
+
+        FilePath backupPath = GetBackupPathForAssemblyInfo(path);
+    
+        if(!Context.FileExists(backupPath))
+        {
+            return;
+        }
+        
+        Context.DeleteFile(path);
+        Context.MoveFile(backupPath, path);
     }
     
     public virtual void RestoreAssemblyInfo()
     {
         foreach(var path in assemblyInfos)
         {
-            Context.Information("Restoring assembly information for file {0}...", path);
-
-            FilePath backupPath = GetBackupPathForAssemblyInfo(path);
-        
-            if(!Context.FileExists(backupPath))
-            {
-                continue;
-            }
-            
-            Context.DeleteFile(path);
-            Context.MoveFile(backupPath, path);
+            RestoreAssemblyInfo(path);
         }
     }
     
