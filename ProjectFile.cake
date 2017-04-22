@@ -49,7 +49,6 @@ public class ProjectFile
         var content = System.IO.File.ReadAllText(abs);
 
         var regex = new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.Multiline);
-
         content = regex.Replace(content, replacement);
 
         System.IO.File.WriteAllText(abs, content);

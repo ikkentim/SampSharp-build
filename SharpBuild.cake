@@ -157,7 +157,8 @@ public class SharpBuild
     private void PrepareProjectFile(string project)
     {
         var file = GetProjectFile(project);
-
+        file.Backup();
+        
         var notes = string.Join("\n", GetReleaseNotes(project).Notes);
         notes = notes.Replace("<", "&lt;");
 
@@ -165,7 +166,6 @@ public class SharpBuild
         file.Replace("<FileVersion>(.*)</FileVersion>", "<FileVersion>" + Version + "</FileVersion>");
         file.Replace("<Version>(.*)</Version>", "<Version>" + VersionFull + "</Version>");
         file.Replace("<PackageReleaseNotes>(.*)</PackageReleaseNotes>", "<PackageReleaseNotes>" + notes + "</PackageReleaseNotes>");
-        file.Backup();
     }
     
     private void RestoreProjectFile(string project)
