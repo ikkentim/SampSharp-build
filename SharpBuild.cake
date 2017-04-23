@@ -137,6 +137,12 @@ public class SharpBuild
             _version = parts[0];
             _versionSuffix = parts.Length > 1 ? parts[1] : null;
         }
+        else if (IsRunningOnAppVeyor)
+        {
+            _version = "0.0.0";
+            _versionSuffix = "appveyorbuild";
+            _versionFull = "0.0.0-appveyorbuild";
+        }
         else
         {
             _version = "0.0.0";
