@@ -120,17 +120,19 @@ public class SharpBuild
 
         Projects = projects;
     }
-      
+
+    /// Gets the project file for the specified project.
     private ProjectFile GetProjectFile(string project)
     {
         return new ProjectFile(Context, project);
     }
-  
+
+    /// Builds the version strings, Version, VersionFull and VersionSuffix
     private void BuildVersion()
     {
-        if(_version != null) return;
+        if (_version != null) return;
         
-        if(IsAppVeyorTag)
+        if (IsAppVeyorTag)
         {
             _versionFull = AppVeyorTagName;
             var parts = _versionFull.Split(new []{'-'}, 2);
@@ -150,16 +152,39 @@ public class SharpBuild
             _versionFull = "0.0.0-localbuild";
         }
     }
-    
+
+    /// Gets the most recent release notes for the specified project.
     private ReleaseNotes GetReleaseNotes(string project)
     {
-        var path = string.Format("./CHANGES-{0}.md", project);
+        string path;
+        if (Projects.Length > 1) {
+            path = string.Format("./CHANGES-{0}.md", project);
+        }
+        else {
+            path = "./CHANGES.md";
+        }
 
-        return Context.FileExists(path)
+        var notes = Context.FileExists(path)
             ? Context.ParseReleaseNotes(path)
-            : Context.ParseReleaseNotes("./CHANGES.md");
+            : null;
+
+        if (notes != null)
+        {
+            Context.Information(project + "   :   " + notes.RawVersionLine.Trim().TrimStart('#').Trim().ToLower() + " ,, " + (notes.RawVersionLine.Trim().TrimStart('#').Trim().ToLower() == VersionFull));
+        }
+
+        return notes;
     }
-    
+
+    /// Gets a value indicating whether the release notes for the specified
+    /// project has notes for the version specified in "VersionFull".
+    private bool HasMatchingReleaseNotesVersion(string project) {
+        var notes = GetReleaseNotes(project);
+
+        return VersionFull.Trim().ToLower() == notes.RawVersionLine.Trim().TrimStart('#').Trim().ToLower();
+    }
+
+    /// Backs up and replaces the project (.csproj) file with a file containing the version and release notes of the project.
     private void PrepareProjectFile(string project)
     {
         var file = GetProjectFile(project);
@@ -173,17 +198,20 @@ public class SharpBuild
         file.Replace("<Version>(.*)</Version>", "<Version>" + VersionFull + "</Version>");
         file.Replace("<PackageReleaseNotes>(.*)</PackageReleaseNotes>", "<PackageReleaseNotes>" + notes + "</PackageReleaseNotes>");
     }
-    
+
+    /// Restores a backed up project (.csproj) file.
     private void RestoreProjectFile(string project)
     {
         GetProjectFile(project).Restore();
     }
-    
+
+    /// (TARGET) Cleans the build directory.
     public void Clean()
     {
         Context.CleanDirectory(BuildPath);
     }
-    
+
+    /// (TARGET) Builds the projects.
     public void Build()
     {
         var settings = new DotNetCoreBuildSettings {
@@ -191,22 +219,24 @@ public class SharpBuild
             Configuration = Configuration,
         };
 
-        foreach(var projectFile in ProjectFiles) {
+        foreach (var projectFile in ProjectFiles) {
             Context.DotNetCoreBuild(projectFile.Path.FullPath, settings);
         }
     }
-    
+
+    /// (TARGET) Restores dependencies of the DotNet Core projects
     public void Restore()
     {
         var settings = new DotNetCoreRestoreSettings {
             Sources = NuGetSources
         };
 
-        foreach(var projectFile in ProjectFiles) {
+        foreach (var projectFile in ProjectFiles) {
             Context.DotNetCoreRestore(projectFile.Path.FullPath, settings);
         }
     }
 
+    /// (TARGET) Packs the NuGet packages.
     public void Pack()
     {
         Context.Information("Packing with version " + VersionFull);
@@ -217,13 +247,15 @@ public class SharpBuild
             OutputDirectory = BuildPath,
         };
 
-        foreach(var project in Projects) {
+        foreach (var project in Projects) {
+            // Only pack if release notes have been written.
             PrepareProjectFile(project);
             Context.DotNetCorePack(GetProjectFile(project).Path.FullPath, settings);
             RestoreProjectFile(project);
         }
     }
 
+    /// Publishes the packages on GitHub if release notes have been written for the tag version.
     public void PublishNuGet()
     {
         var settings = new NuGetPushSettings {
@@ -231,26 +263,48 @@ public class SharpBuild
             ApiKey = NuGetKey
         };
 
-        foreach(var project in Projects)
+        foreach (var project in Projects)
         {
-            foreach(var package in Context.GetFiles(BuildPath + "/" + project + ".*.nupkg"))
+            // Only push the package if release notes have been written.
+            if(GetReleaseNotes(project).Version.ToString() == VersionFull)
             {
-                Context.NuGetPush(package, settings);
+                foreach (var package in Context.GetFiles(BuildPath + "/" + project + ".*.nupkg"))
+                {
+                    Context.NuGetPush(package, settings);
+                }
             }
         }
     }
 
+    /// Creates a release on GitHub on the master branch the package along with
+    /// the release notes. Nothing will be done if no GitHub user or pass is set.
     public void PublishGitHub()
     {
-        var notesPath = BuildPath + "/releasenotes-" + VersionFull + ".txt";
-
-        string notes = "";
-        
-        foreach(var project in Projects)
+        if (string.IsNullOrEmpty(GitHubReleaseUser) ||
+            string.IsNullOrEmpty(GitHubReleasePass) ||
+            string.IsNullOrEmpty(GitHubRepoUser) ||
+            string.IsNullOrEmpty(GitHubRepoName))
         {
-            notes += "# " + project + "\n";
-            notes += string.Join("\n", GetReleaseNotes(project).Notes);
-            notes += "\n\n";
+            return;
+        }
+
+        // Construct release notes for all project
+        var notesPath = BuildPath + "/releasenotes-" + VersionFull + ".txt";
+        string notes = string.Empty;
+        
+        foreach (var project in Projects)
+        {
+            var releaseNotes = GetReleaseNotes(project);
+            if(releaseNotes.Version.ToString() == VersionFull)
+            {
+                // Prefix notes with project name if there are multiple projects.
+                if(Projects.Length > 1)
+                {
+                    notes += "## " + project + "\n";
+                }
+                notes += string.Join("\n", releaseNotes.Notes);
+                notes += "\n\n";
+            }
         }
 
         System.IO.File.WriteAllText(notesPath, notes);
@@ -266,6 +320,7 @@ public class SharpBuild
         Context.GitReleaseManagerPublish(GitHubReleaseUser, GitHubReleasePass, GitHubRepoUser, GitHubRepoName, VersionFull);
     }
 
+    /// (TARGET) Publishes the packages to NuGet and GitHub.
     public void Publish()
     {
         PublishNuGet();
