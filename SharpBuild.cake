@@ -168,11 +168,6 @@ public class SharpBuild
             ? Context.ParseReleaseNotes(path)
             : null;
 
-        if (notes != null)
-        {
-            Context.Information(project + "   :   " + notes.RawVersionLine.Trim().TrimStart('#').Trim().ToLower() + " ,, " + (notes.RawVersionLine.Trim().TrimStart('#').Trim().ToLower() == VersionFull));
-        }
-
         return notes;
     }
 
@@ -266,7 +261,7 @@ public class SharpBuild
         foreach (var project in Projects)
         {
             // Only push the package if release notes have been written.
-            if(GetReleaseNotes(project).Version.ToString() == VersionFull)
+            if(HasMatchingReleaseNotesVersion(project))
             {
                 foreach (var package in Context.GetFiles(BuildPath + "/" + project + ".*.nupkg"))
                 {
@@ -294,14 +289,15 @@ public class SharpBuild
         
         foreach (var project in Projects)
         {
-            var releaseNotes = GetReleaseNotes(project);
-            if(releaseNotes.Version.ToString() == VersionFull)
+            if(HasMatchingReleaseNotesVersion(project))
             {
                 // Prefix notes with project name if there are multiple projects.
                 if(Projects.Length > 1)
                 {
                     notes += "## " + project + "\n";
                 }
+                
+                var releaseNotes = GetReleaseNotes(project);
                 notes += string.Join("\n", releaseNotes.Notes);
                 notes += "\n\n";
             }
