@@ -242,10 +242,14 @@ public class SharpBuild
             OutputDirectory = BuildPath,
         };
 
+        // Prepare all projects before packing so project references have correct version information.
         foreach (var project in Projects) {
-            // Only pack if release notes have been written.
             PrepareProjectFile(project);
+        }
+        foreach (var project in Projects) {
             Context.DotNetCorePack(GetProjectFile(project).Path.FullPath, settings);
+        }
+        foreach (var project in Projects) {
             RestoreProjectFile(project);
         }
     }
