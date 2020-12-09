@@ -59,11 +59,20 @@ public class SharpBuild
     
     public bool IsRelease =>  Configuration == "Release";
 
-    public string TagName => Context.EnvironmentVariable("GITHUB_REF"); // TODO contents?
+    public string TagName
+    {
+        get
+        {
+            var refStr = Context.EnvironmentVariable("GITHUB_REF");
+            return refStr != null && refStr.StartsWith("refs/tags/")
+                ? refStr.Substring(10)
+                : null;
+        }
+    }
 
     public bool IsCi => Context.BuildSystem().GitHubActions.IsRunningOnGitHubActions;
 
-    public bool IsCiWithTag => IsCi && false; // TODO: WIP
+    public bool IsCiWithTag => IsCi && !string.IsNullOrEmpty(TagName);
 
     public string Version
     {
