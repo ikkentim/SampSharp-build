@@ -1,7 +1,6 @@
 #load "./cake/SharpBuild.cake"
 
-var build = new SharpBuild(Context, "<gh-user>", "<gh-repo>",
-    "<project-name>");
+var build = new SharpBuild(Context, "<project-name>");
 
 Task("Clean")
     .Does(() => build.Clean());
@@ -15,19 +14,18 @@ Task("Build")
     .Does(() => build.Build());
     
 Task("Pack")
-    .IsDependentOn("Clean")
-    .IsDependentOn("Restore")
+    .IsDependentOn("Build")
     .Does(() => build.Pack());
 
 Task("Publish")
-    .WithCriteria(() => build.IsAppVeyorTag)
+    .WithCriteria(() => build.IsCiWithTag)
     .IsDependentOn("Pack")
     .Does(() => build.Publish());
 
 Task("Default")
     .IsDependentOn("Build");
 
-Task("AppVeyor")
+Task("CI")
     .IsDependentOn("Publish");
 
 RunTarget(Argument("target", "Default"));
